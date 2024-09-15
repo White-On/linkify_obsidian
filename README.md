@@ -1,7 +1,3 @@
-Here's a basic `README.md` for your Python script that automates the creation of backlinks in Obsidian:
-
----
-
 # Obsidian Backlink Automation Script
 
 This Python script automates the creation of backlinks in [Obsidian](https://obsidian.md/), a powerful note-taking application that uses plain text Markdown files. Backlinks are essential in Obsidian for connecting ideas and building a network of interconnected notes, making it easier to navigate your knowledge base.
