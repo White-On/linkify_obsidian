@@ -18,6 +18,7 @@ def get_note_titles(vault_path: Path) -> list[str]:
     note_titles = [file.stem for file in markdown_files]
     return note_titles
 
+
 def get_markdown_files(vault_path: Path) -> list[Path]:
     """
     Get all markdown files in the vault.
@@ -75,7 +76,7 @@ def split_text_for_linkification(text: str) -> list[tuple[str, bool]]:
     return linkifiable_sections
 
 
-def linkify_text(text: str, note_titles: list[str], file_title = None) -> str:
+def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
     """
     Replaces occurrences of note titles in the text with [[note-title]] links.
     Prefers the longest match.
@@ -118,14 +119,24 @@ def linkify_text(text: str, note_titles: list[str], file_title = None) -> str:
     decoration_end = r"s?(\]\])?s?(?![\w])"
 
     # a dict to store the title and the pattern
-    pattern_collection = {title: decoration_start + re.escape(remove_accents(title).decode("utf-8")) + decoration_end for title in sorted_titles}
+    pattern_collection = {
+        title: decoration_start
+        + re.escape(remove_accents(title).decode("utf-8"))
+        + decoration_end
+        for title in sorted_titles
+    }
     logging.debug(f"Pattern collection: {pattern_collection}")
 
-    no_accent_text = remove_accents(text).decode('utf-8')
+    no_accent_text = remove_accents(text).decode("utf-8")
     # Use a regex to replace titles in the text with their linkified versions
     linked_text = text
     for title, pattern in pattern_collection.items():
-        linked_text = re.sub(pattern, lambda match: replacement(match, title), linked_text, flags=re.IGNORECASE)
+        linked_text = re.sub(
+            pattern,
+            lambda match: replacement(match, title),
+            linked_text,
+            flags=re.IGNORECASE,
+        )
 
     # Handle acronyms separately because they don't need word boundaries in the same way
     acronyms_pattern = "|".join(
@@ -148,8 +159,9 @@ def remove_accents(input_str):
     only_ascii = nfkd_form.encode("ASCII", "ignore")
     return only_ascii
 
-def setup_logging(log_filename:Path=None):
-    
+
+def setup_logging(log_filename: Path = None):
+
     if log_filename is None:
         log_filename = Path("linkify.log")
     # Set up logging
@@ -161,6 +173,7 @@ def setup_logging(log_filename:Path=None):
             logging.StreamHandler(sys.stdout),
         ],
     )
+
 
 def copy_files_to_somewhere_else(destination: Path, *files: list[Path], **kwargs):
     for file in files:
@@ -177,6 +190,7 @@ def copy_files_to_somewhere_else(destination: Path, *files: list[Path], **kwargs
             logging.debug(f"📋 Copied file: {destination_file}")
         except Exception as e:
             logging.error(f"🔴 Error copying file {file}: {e}")
+
 
 def main():
 
@@ -206,13 +220,15 @@ def main():
             return
         no_specified_file = not file_path.is_file()
         if no_specified_file:
-            logging.warning(f"🔴 No Specific file given, all files in the vault will be linkify")
-    
+            logging.warning(
+                f"🔴 No Specific file given, all files in the vault will be linkify"
+            )
+
         note_titles = get_note_titles(vault_path)
         if not note_titles:
             logging.error(f"🔴 No markdown files found in the vault: {vault_path}")
             return
-    
+
         # to ensure the safety of the integrity of the vault we will
         # make a dir inside the vault to store the linkified files
         # so we don't mess up with the original files if something goes wrong
@@ -224,7 +240,7 @@ def main():
             parsing_filepath = get_markdown_files(vault_path)
         else:
             parsing_filepath = [file_path]
-        
+
         files_to_linkify_path = parsing_filepath
 
         logging.info(f"📂 Vault path: {vault_path.absolute()}")
@@ -249,7 +265,9 @@ def main():
 
                 logging.info(f"🔗 Linkified file: {file_to_linkify_path.stem}")
             except Exception as e:
-                logging.error(f"🔴 Error processing file {file_to_linkify_path.stem}: {e}")
+                logging.error(
+                    f"🔴 Error processing file {file_to_linkify_path.stem}: {e}"
+                )
     else:
         # test mode
         logging.info("🔧 Running in test mode")
