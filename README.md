@@ -25,7 +25,12 @@ to your Obsidian .obsidian/scripts/python folder. You need [the complementary pl
 - ⚠️ **Important**: by default, the script is in safe mode which means it will create a backup of your vault before running (you can find it in the same directory as you vault). You can disable this by setting `SAFE_MODE = False` in the script. This is to ensure that you don't lose any data in case something goes wrong.
 
 - For a single file, run the script with obsidian open and the file you want to link to open.
+
+  ![Obsidian_wGsVu7F7sB](https://github.com/user-attachments/assets/3c477974-b890-4061-99e5-917939ae26fc)
+  
 - For the whole vault, run the script with obsidian open and no file open (you can open the graph view and it will count as no file open).
+
+![Obsidian_6Pa1wBb9m8](https://github.com/user-attachments/assets/05b58f7d-e30e-4d45-9a80-0b439b505c83)
 
 # Acknowledgements
 
