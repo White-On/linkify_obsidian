@@ -4,7 +4,6 @@ import re
 import logging
 import unicodedata
 
-from urllib.parse import quote  # for url encoding
 from pathlib import Path
 
 
@@ -41,13 +40,17 @@ def separate_acronyms_and_classic_titles(
     Separates note titles into two lists: acronyms and classic titles.
     Acronyms are only uppercase letters.
     """
-    acronyms = []
+    acronyms = {}
     classic_titles = []
     for title in titles:
-        if title.isupper():
-            acronyms.append(title)
-        else:
-            classic_titles.append(title)
+        classic_titles.append(title)
+        # transform the title into a accronym
+        simpler_title = simplified_string(title)
+        potential_acronym = "".join(
+            [word[0].upper() for word in simpler_title.split("_")]
+        )
+        if len(potential_acronym) > 1 and potential_acronym not in acronyms:
+            acronyms[potential_acronym] = title
 
     logging.debug(f"🔠 Acronyms: {acronyms}")
     logging.debug(f"📚 Classic titles: {classic_titles}")
@@ -106,7 +109,7 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
             ):
                 linkified = f"[[{original_text[:-1]}]]s"
             else:
-                if title:
+                if title and title != original_text:
                     linkified = f"[[{title}|{original_text}]]"
                 else:
                     linkified = f"[[{original_text}]]"
@@ -120,17 +123,14 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
 
     # a dict to store the title and the pattern
     pattern_collection = {
-        title: decoration_start
-        + re.escape(remove_accents(title).decode("utf-8"))
-        + decoration_end
+        title: decoration_start + re.escape(title) + decoration_end
         for title in sorted_titles
     }
-    logging.debug(f"Pattern collection: {pattern_collection}")
 
-    no_accent_text = remove_accents(text).decode("utf-8")
     # Use a regex to replace titles in the text with their linkified versions
     linked_text = text
     for title, pattern in pattern_collection.items():
+        logging.debug(f"Title: {title}, Pattern: {pattern}")
         linked_text = re.sub(
             pattern,
             lambda match: replacement(match, title),
@@ -138,13 +138,19 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
             flags=re.IGNORECASE,
         )
 
+    if len(acronyms) == 0:
+        return linked_text
+    
     # Handle acronyms separately because they don't need word boundaries in the same way
-    acronyms_pattern = "|".join(
-        decoration_start + re.escape(acronym) + decoration_end for acronym in acronyms
-    )
-    logging.debug(f"Pattern acronyms: {acronyms_pattern}")
-    linked_text = re.sub(acronyms_pattern, replacement, linked_text)
-
+    logging.debug(f"Acronyms: {acronyms}")
+    acronyms_pattern_collection = {
+        acronym: decoration_start + acronym + decoration_end for acronym in acronyms.keys()
+    }
+    # logging.debug(f"Pattern acronyms: {acronyms_pattern_collection}")
+    for acronym, pattern, title in zip(acronyms.keys(), acronyms_pattern_collection.values(), acronyms.values()):
+        logging.debug(f"Acronym: {acronym}, Pattern: {pattern}, Title: {title}")
+        linked_text = re.sub(pattern, lambda match: replacement(match, title), linked_text, re.IGNORECASE)
+    
     return linked_text
 
 
@@ -166,7 +172,7 @@ def setup_logging(log_filename: Path = None):
         log_filename = Path("linkify.log")
     # Set up logging
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             logging.FileHandler(log_filename, mode="w", encoding="utf-8"),
@@ -193,7 +199,6 @@ def copy_files_to_somewhere_else(destination: Path, *files: list[Path], **kwargs
 
 
 def main():
-
     log_filename = Path(__file__).stem + ".log"
     setup_logging(log_filename)
 
@@ -237,17 +242,14 @@ def main():
         safe_filepath.mkdir(exist_ok=True)
 
         if no_specified_file:
-            parsing_filepath = get_markdown_files(vault_path)
+            files_to_linkify_path = get_markdown_files(vault_path)
         else:
-            parsing_filepath = [file_path]
+            files_to_linkify_path = [file_path]
 
-        files_to_linkify_path = parsing_filepath
-
-        logging.info(f"📂 Vault path: {vault_path.absolute()}")
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
         for file_to_linkify_path in files_to_linkify_path:
             try:
-                with open(file_to_linkify_path, "r") as file:
+                with open(file_to_linkify_path, "r", encoding="utf-8") as file:
                     text = file.read()
 
                 file_title = Path(file_to_linkify_path).stem
@@ -269,16 +271,17 @@ def main():
                     f"🔴 Error processing file {file_to_linkify_path.stem}: {e}"
                 )
     else:
+        vault_path = Path().cwd() / "backup_obsidian"
+        note_titles = get_note_titles(vault_path)
         # test mode
         logging.info("🔧 Running in test mode")
-        return
         logging.info(f"📂 Vault path: {vault_path.absolute()}")
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
 
-        test_text = "L'objectif de la **régression** ou de l'approximation de la fonction est de créer un modèle à partir des données observées. \
-            Le modèle a une structure fixe avec des paramètres (comme les coefficients d'un polynôme par exemple), et la régression consiste à ajuster \
-            ces paramètres pour s'adapter aux données. En machine learning, c'est une technique très importante car avoir un bon modèle permet de \
-            meilleures prédictions et performances. La régression fait parti des méthode d'supervised learning"
+        test_text = "The goal of **regression** or function approximation is to create a model from observed data. The model has \
+            a fixed structure with parameters (such as the coefficients of a polynomial), and regression involves adjusting these \
+            parameters to fit the data. In Machine learning, this is a crucial technique as having a good model leads to better \
+            predictions and performance. Regression is part of [[Supervised learning|supervised learning]] methods. ML algorithms that are used for regression"
 
         logging.info("Note titles: %s", note_titles)
 
