@@ -162,18 +162,27 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> tuple[st
     return linked_text, nb_new_links
 
 
-def simplified_string(s):
+def simplified_string(s: str) -> str:
+    """
+    Simplifies a string by removing accents, converting to lowercase, and replacing spaces with underscores.
+    """
     s = remove_accents(s).decode("utf-8")
     return s.casefold().replace(" ", "_").replace("-", "_")
 
 
-def remove_accents(input_str):
+def remove_accents(input_str: str) -> bytes:
+    """
+    Removes accents from a string.
+    """
     nfkd_form = unicodedata.normalize("NFKD", input_str)
     only_ascii = nfkd_form.encode("ASCII", "ignore")
     return only_ascii
 
 
 def setup_logging(log_filename: Path = None):
+    """
+    Set up logging to a file and the console.
+    """
 
     if log_filename is None:
         log_filename = Path("linkify.log")
@@ -189,6 +198,10 @@ def setup_logging(log_filename: Path = None):
 
 
 def copy_files_to_somewhere_else(destination: Path, *files: list[Path], **kwargs):
+    """
+    Copy files to a destination folder.
+    """
+
     for file in files:
         try:
             file_name = file.name
@@ -249,7 +262,6 @@ def main():
             print(f"No markdown files found in the vault: {vault_path}")
             return
 
-
         if no_specified_file:
             files_to_linkify_path = get_markdown_files(vault_path)
         else:
@@ -264,7 +276,9 @@ def main():
 
             logging.info(f"📂 Safe directory: {safe_filepath}")
             print(f"Safe mode enabled, backup files will be stored in {safe_filepath}")
-            copy_files_to_somewhere_else(safe_filepath, *files_to_linkify_path, encoding="utf-8")
+            copy_files_to_somewhere_else(
+                safe_filepath, *files_to_linkify_path, encoding="utf-8"
+            )
 
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
         nb_new_backlinks = 0
