@@ -1,4 +1,4 @@
-# Obsidian Backlink Automation Script
+# Obsidian Backlink Automation Script 💎🔗 
 
 This Python script automates the creation of backlinks in [Obsidian](https://obsidian.md/), a powerful note-taking application that uses plain text Markdown files. Backlinks are essential in Obsidian for connecting ideas and building a network of interconnected notes, making it easier to navigate your knowledge base.
 
@@ -13,18 +13,23 @@ This Python script automates the creation of backlinks in [Obsidian](https://obs
 
 - **Python 3.x**: Ensure you have Python installed on your system.
 - **Obsidian**: This script works with Markdown files in your Obsidian vault.
-- You can also add a plugin to Obsidian tolaunch the script from within the app.
+- You can also add a plugin to Obsidian to launch the script from within the app.
+
 ## Installation
 
-TODO
+You only need the `linkify.py` file to run the script. You can download it directly from this repository. Then add it 
+to your Obsidian .obsidian/scripts/python folder. You need [the complementary plugin to run the script from within Obsidian](obsidian://show-plugin?id=python-scripter).
 
 ## Usage
 
-TODO
+- ⚠️ **Important**: by default, the script is in safe mode which means it will create a backup of your vault before running (you can find it in the same directory as you vault). You can disable this by setting `SAFE_MODE = False` in the script. This is to ensure that you don't lose any data in case something goes wrong.
 
-## Example
+- For a single file, run the script with obsidian open and the file you want to link to open.
+- For the whole vault, run the script with obsidian open and no file open (you can open the graph view and it will count as no file open).
 
-TODO
+# Acknowledgements
+
+This script was based on the code of [Onyr](https://github.com/0nyr)
 
 ## Contribution
 

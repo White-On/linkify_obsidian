@@ -253,19 +253,16 @@ def main():
                 f"🔴 No Specific file given, all files in the vault will be linkify"
             )
             print(f"No Specific file given, all files in the vault will be linkify")
+            files_to_linkify_path = get_markdown_files(vault_path)
         else:
             print(f'Running linkify script on "{file_path.stem}"')
+            files_to_linkify_path = [file_path]
 
         note_titles = get_note_titles(vault_path)
         if not note_titles:
             logging.error(f"🔴 No markdown files found in the vault: {vault_path}")
             print(f"No markdown files found in the vault: {vault_path}")
             return
-
-        if no_specified_file:
-            files_to_linkify_path = get_markdown_files(vault_path)
-        else:
-            files_to_linkify_path = [file_path]
 
         # to ensure the safety of the integrity of the vault we will
         # make a dir as a backup of the files that will be modified
