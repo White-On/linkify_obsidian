@@ -143,23 +143,27 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> tuple[st
 
     if len(acronyms) == 0:
         return linked_text
-    
+
     # Handle acronyms separately because they don't need word boundaries in the same way
     logging.debug(f"Acronyms: {acronyms}")
     acronyms_pattern_collection = {
-        acronym: decoration_start + acronym + decoration_end for acronym in acronyms.keys()
+        acronym: decoration_start + acronym + decoration_end
+        for acronym in acronyms.keys()
     }
     # logging.debug(f"Pattern acronyms: {acronyms_pattern_collection}")
-    for acronym, pattern, title in zip(acronyms.keys(), acronyms_pattern_collection.values(), acronyms.values()):
+    for acronym, pattern, title in zip(
+        acronyms.keys(), acronyms_pattern_collection.values(), acronyms.values()
+    ):
         logging.debug(f"Acronym: {acronym}, Pattern: {pattern}, Title: {title}")
-        linked_text = re.sub(pattern, lambda match: replacement(match, title), linked_text, re.IGNORECASE)
-    
+        linked_text = re.sub(
+            pattern, lambda match: replacement(match, title), linked_text, re.IGNORECASE
+        )
+
     return linked_text, nb_new_links
 
 
 def simplified_string(s):
     s = remove_accents(s).decode("utf-8")
-    print(s)
     return s.casefold().replace(" ", "_").replace("-", "_")
 
 
@@ -199,6 +203,7 @@ def copy_files_to_somewhere_else(destination: Path, *files: list[Path], **kwargs
             logging.debug(f"📋 Copied file: {destination_file}")
         except Exception as e:
             logging.error(f"🔴 Error copying file {file}: {e}")
+            print(f"Error copying file {file}: {e}")
 
 
 def main():
@@ -217,25 +222,31 @@ def main():
         vault_path = Path(sys.argv[1])
         file_path = vault_path / sys.argv[2]
 
-        logging.info(f"python_script: {python_script}")
-        logging.info(f"📂 Vault path: {vault_path.absolute()}")
-        logging.info(f"📋 Parsing file: {file_path}")
+        logging.debug(f"python_script: {python_script}")
+        logging.debug(f"📂 Vault path: {vault_path.absolute()}")
+        logging.debug(f"📋 Parsing file: {file_path}")
 
         if not vault_path.exists():
             logging.error(f"🔴 Vault path does not exist: {vault_path}")
+            print(f"Vault path does not exist: {vault_path}")
             return
         if not file_path.exists():
             logging.error(f"🔴 Parsing file does not exist: {file_path}")
+            print(f"Parsing file does not exist: {file_path}")
             return
         no_specified_file = not file_path.is_file()
         if no_specified_file:
             logging.warning(
                 f"🔴 No Specific file given, all files in the vault will be linkify"
             )
+            print(f"No Specific file given, all files in the vault will be linkify")
+        else:
+            print(f'Running linkify script on "{file_path.stem}"')
 
         note_titles = get_note_titles(vault_path)
         if not note_titles:
             logging.error(f"🔴 No markdown files found in the vault: {vault_path}")
+            print(f"No markdown files found in the vault: {vault_path}")
             return
 
         # to ensure the safety of the integrity of the vault we will
@@ -264,13 +275,15 @@ def main():
                 complete_linked_text = ""
                 for section, linkifiable in linkifiable_sections:
                     if linkifiable:
-                        linked_text, nb_new_links = linkify_text(section, note_titles, file_title)
+                        linked_text, nb_new_links = linkify_text(
+                            section, note_titles, file_title
+                        )
                         complete_linked_text += linked_text
                         nb_new_backlinks += nb_new_links
                     else:
                         complete_linked_text += section
                 new_file_path = where_to_save / file_to_linkify_path.name
-                with open(new_file_path, "w") as file:
+                with open(new_file_path, "w", encoding="utf-8") as file:
                     file.write(complete_linked_text)
 
                 logging.debug(f"🔗 Linkified file: {file_to_linkify_path.stem}")
@@ -278,24 +291,29 @@ def main():
                 logging.error(
                     f"🔴 Error processing file {file_to_linkify_path.stem}: {e}"
                 )
+                print(f"Error processing file {file_to_linkify_path.stem}: {e}")
+
         logging.info(f"🔗 Total new backlinks: {nb_new_backlinks}")
+        print(f"Script executed successfully")
+        print(f"Total new backlinks: {nb_new_backlinks}")
     else:
         # Test mode
-        vault_path = Path().cwd() / "backup_obsidian"
-        note_titles = get_note_titles(vault_path)
+        note_titles = ["Regression", "Supervised learning", "Machine learning"]
 
         logging.info("🔧 Running in test mode")
-        logging.info(f"📂 Vault path: {vault_path.absolute()}")
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
 
         test_text = "The goal of **regression** or function approximation is to create a model from observed data. The model has \
             a fixed structure with parameters (such as the coefficients of a polynomial), and regression involves adjusting these \
             parameters to fit the data. In Machine learning, this is a crucial technique as having a good model leads to better \
-            predictions and performance. Regression is part of [[Supervised learning|supervised learning]] methods. ML algorithms that are used for regression"
+            predictions and performance. Regression is part of [[Supervised learning|supervised learning]] methods. ML algorithms that are used for regression\
+            are called regression algorithms. And what a bout a french word like régression?"
 
         logging.info("Note titles: %s", note_titles)
 
-        linked_text, nb_added_backlink = linkify_text(test_text, note_titles, "Regression")
+        linked_text, nb_added_backlink = linkify_text(
+            test_text, note_titles, "Regression"
+        )
         logging.info("Linkified test text: %s", linked_text)
         logging.info("Nb new backlinks: %s", nb_added_backlink)
 
