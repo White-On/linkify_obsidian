@@ -1,5 +1,4 @@
 import sys
-import os
 import re
 import logging
 import unicodedata
@@ -79,7 +78,7 @@ def split_text_for_linkification(text: str) -> list[tuple[str, bool]]:
     return linkifiable_sections
 
 
-def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
+def linkify_text(text: str, note_titles: list[str], file_title=None) -> tuple[str, int]:
     """
     Replaces occurrences of note titles in the text with [[note-title]] links.
     Prefers the longest match.
@@ -94,6 +93,7 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
 
     # Sort titles by length in descending order to prefer longest match
     sorted_titles = sorted(classic_titles, key=len, reverse=True)
+    nb_new_links = 0
 
     def replacement(match, title=None):
         original_text = match.group(0)
@@ -113,6 +113,9 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
                     linkified = f"[[{title}|{original_text}]]"
                 else:
                     linkified = f"[[{original_text}]]"
+
+            nonlocal nb_new_links
+            nb_new_links += 1
             return linkified
 
     # Escape titles for regex, add word boundaries, and handle an optional 's' at the end
@@ -151,7 +154,7 @@ def linkify_text(text: str, note_titles: list[str], file_title=None) -> str:
         logging.debug(f"Acronym: {acronym}, Pattern: {pattern}, Title: {title}")
         linked_text = re.sub(pattern, lambda match: replacement(match, title), linked_text, re.IGNORECASE)
     
-    return linked_text
+    return linked_text, nb_new_links
 
 
 def simplified_string(s):
@@ -172,7 +175,7 @@ def setup_logging(log_filename: Path = None):
         log_filename = Path("linkify.log")
     # Set up logging
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             logging.FileHandler(log_filename, mode="w", encoding="utf-8"),
@@ -207,6 +210,7 @@ def main():
     obsidian_script_used = nb_args == 3
     no_specified_file = None
     note_titles = None
+    safe_mode = False
 
     if obsidian_script_used:
         python_script = sys.argv[0]
@@ -239,7 +243,9 @@ def main():
         # so we don't mess up with the original files if something goes wrong
         safe_dir = "linkified_files"
         safe_filepath = vault_path / safe_dir
-        safe_filepath.mkdir(exist_ok=True)
+        safe_filepath.mkdir(exist_ok=True) if safe_mode else None
+
+        where_to_save = safe_filepath if safe_mode else vault_path
 
         if no_specified_file:
             files_to_linkify_path = get_markdown_files(vault_path)
@@ -247,6 +253,7 @@ def main():
             files_to_linkify_path = [file_path]
 
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
+        nb_new_backlinks = 0
         for file_to_linkify_path in files_to_linkify_path:
             try:
                 with open(file_to_linkify_path, "r", encoding="utf-8") as file:
@@ -257,23 +264,26 @@ def main():
                 complete_linked_text = ""
                 for section, linkifiable in linkifiable_sections:
                     if linkifiable:
-                        linked_text = linkify_text(section, note_titles, file_title)
+                        linked_text, nb_new_links = linkify_text(section, note_titles, file_title)
                         complete_linked_text += linked_text
+                        nb_new_backlinks += nb_new_links
                     else:
                         complete_linked_text += section
-                new_file_path = safe_filepath / file_to_linkify_path.name
+                new_file_path = where_to_save / file_to_linkify_path.name
                 with open(new_file_path, "w") as file:
                     file.write(complete_linked_text)
 
-                logging.info(f"🔗 Linkified file: {file_to_linkify_path.stem}")
+                logging.debug(f"🔗 Linkified file: {file_to_linkify_path.stem}")
             except Exception as e:
                 logging.error(
                     f"🔴 Error processing file {file_to_linkify_path.stem}: {e}"
                 )
+        logging.info(f"🔗 Total new backlinks: {nb_new_backlinks}")
     else:
+        # Test mode
         vault_path = Path().cwd() / "backup_obsidian"
         note_titles = get_note_titles(vault_path)
-        # test mode
+
         logging.info("🔧 Running in test mode")
         logging.info(f"📂 Vault path: {vault_path.absolute()}")
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
@@ -285,8 +295,9 @@ def main():
 
         logging.info("Note titles: %s", note_titles)
 
-        linked_text = linkify_text(test_text, note_titles, "Regression")
+        linked_text, nb_added_backlink = linkify_text(test_text, note_titles, "Regression")
         logging.info("Linkified test text: %s", linked_text)
+        logging.info("Nb new backlinks: %s", nb_added_backlink)
 
 
 if __name__ == "__main__":
