@@ -215,7 +215,7 @@ def main():
     obsidian_script_used = nb_args == 3
     no_specified_file = None
     note_titles = None
-    safe_mode = False
+    safe_mode = True
 
     if obsidian_script_used:
         python_script = sys.argv[0]
@@ -249,19 +249,22 @@ def main():
             print(f"No markdown files found in the vault: {vault_path}")
             return
 
-        # to ensure the safety of the integrity of the vault we will
-        # make a dir inside the vault to store the linkified files
-        # so we don't mess up with the original files if something goes wrong
-        safe_dir = "linkified_files"
-        safe_filepath = vault_path / safe_dir
-        safe_filepath.mkdir(exist_ok=True) if safe_mode else None
-
-        where_to_save = safe_filepath if safe_mode else vault_path
 
         if no_specified_file:
             files_to_linkify_path = get_markdown_files(vault_path)
         else:
             files_to_linkify_path = [file_path]
+
+        # to ensure the safety of the integrity of the vault we will
+        # make a dir as a backup of the files that will be modified
+        if safe_mode:
+            safe_dir = f"backup_{vault_path.stem}"
+            safe_filepath = vault_path.parent / safe_dir
+            safe_filepath.mkdir(exist_ok=True)
+
+            logging.info(f"📂 Safe directory: {safe_filepath}")
+            print(f"Safe mode enabled, backup files will be stored in {safe_filepath}")
+            copy_files_to_somewhere_else(safe_filepath, *files_to_linkify_path, encoding="utf-8")
 
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
         nb_new_backlinks = 0
@@ -282,7 +285,7 @@ def main():
                         nb_new_backlinks += nb_new_links
                     else:
                         complete_linked_text += section
-                new_file_path = where_to_save / file_to_linkify_path.name
+                new_file_path = vault_path / file_to_linkify_path.name
                 with open(new_file_path, "w", encoding="utf-8") as file:
                     file.write(complete_linked_text)
 
@@ -300,7 +303,7 @@ def main():
         # Test mode
         note_titles = ["Regression", "Supervised learning", "Machine learning"]
 
-        logging.info("🔧 Running in test mode")
+        logging.warning("🔧 Running in test mode")
         logging.info(f"📚 Nb note titles: %s", len(note_titles))
 
         test_text = "The goal of **regression** or function approximation is to create a model from observed data. The model has \
