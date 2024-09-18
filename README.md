@@ -8,6 +8,7 @@ This Python script automates the creation of backlinks in [Obsidian](https://obs
 - Identifies potential connections between notes based on keywords or titles.
 - Creates backlinks between related notes, enhancing your note organization and knowledge management.
 - Saves time by automating the backlink creation process.
+- Try to create backlinks with acronyms depending of your notes names
 
 ## Prerequisites
 
