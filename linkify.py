@@ -71,7 +71,7 @@ def split_text_for_linkification(text: str) -> list[tuple[str, bool]]:
         |(?<!`)\$.*?\$                 # Inline math blocks ($...$)
         |^\|.*\|$                      # Table rows starting and ending with |
         )
-    ''', re.VERBOSE | re.MULTILINE | re.DOTALL)
+    ''', text, flags= re.VERBOSE | re.MULTILINE | re.DOTALL)
 
     # Keep track of whether each section should be linkified
     linkifiable_sections = []
