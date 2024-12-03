@@ -65,14 +65,19 @@ def split_text_for_linkification(text: str) -> list[tuple[str, bool]]:
     """
     # Split the text into sections that should be linkified and those that should not
     split_text = re.split(
-        r"(```.*?```|(?<!`)\$\$.*?\$\$|(?<!`)\$.*?\$)", text, flags=re.DOTALL
-    )
+        r'''
+        (```.*?```                     # Code blocks (```...```)
+        |(?<!`)\$\$.*?\$\$             # Multiline math blocks ($$...$$)
+        |(?<!`)\$.*?\$                 # Inline math blocks ($...$)
+        |^\|.*\|$                      # Table rows starting and ending with |
+        )
+    ''', re.VERBOSE | re.MULTILINE | re.DOTALL)
 
     # Keep track of whether each section should be linkified
     linkifiable_sections = []
     for i, section in enumerate(split_text):
-        # Sections that should not be linkified are math blocks and code blocks
-        linkifiable = not (section.startswith("```") or section.startswith("$"))
+        # Sections that should not be linkified are math blocks, code blocks and tables
+        linkifiable = not (section.startswith("```") or section.startswith("$") or section.startswith("|"))
         linkifiable_sections.append((section, linkifiable))
 
     return linkifiable_sections
